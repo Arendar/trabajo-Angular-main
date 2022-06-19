@@ -4,6 +4,7 @@ const conexion = mysql.createConnection({
     host : 'localhost',
     user : 'root',
     password : '',
+    port:3306,
     database : 'trabajo angular',
 })
 
