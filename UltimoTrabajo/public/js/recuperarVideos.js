@@ -1,14 +1,14 @@
-import express from 'express'
-const router =express.Router()
-import db from '../database/db.js'
-import authController from '../Controllers/authController'
-import createConnection  from 'mysql'
+import { Router } from '../../node_modules/express';
+const router =Router()
+import { query } from '../../database/db.cjs';
+
+import authController from '../../Controllers/authController.js';
+import { createConnection } from '../../node_modules/mysql';
 
 var nGeneros = 0;
 var nombreGenero = ''; 
 var nVideos = 0;
 var video;
-var primero = true;
 
 
 document.body.onload = cargaPagina;
@@ -109,7 +109,7 @@ function getId(url) {
 
 function getNumeroCategorias (callback){
   try{
-    conexion.query("SELECT COUNT(*) FROM categorias",function (err, results){
+    query("SELECT COUNT(*) FROM categorias",function (err, results){
       if (err){
          throw err;
       }else{
@@ -123,7 +123,7 @@ function getNumeroCategorias (callback){
 
 function getNumeroVideos (callback){
   try{
-    conexion.query("SELECT COUNT(*) FROM vídeos", function (err, results){
+    query("SELECT COUNT(*) FROM vídeos", function (err, results){
       if (err) throw err;
       callback(results[0]);
     }) 
@@ -134,7 +134,7 @@ function getNumeroVideos (callback){
 
 function getCategoria (numeroCat, callback){
   try{
-    conexion.query('SELECT Nombre FROM categorías Where ID = ?', [numeroCat], function (error,results){
+    query('SELECT Nombre FROM categorías Where ID = ?', [numeroCat], function (error,results){
       if(error){console.log(error)}
       callback(results[0]);
     })
@@ -145,7 +145,7 @@ function getCategoria (numeroCat, callback){
 
 function getVideo (numeroVideo, callback){
   try{
-    conexion.query('SELECT * FROM vídeos Where ID = ?', [numeroVideo], async (error,results)=>{
+    query('SELECT * FROM vídeos Where ID = ?', [numeroVideo], async (error,results)=>{
       if(error){console.log(error)}
       callback(results[0]);
     })
