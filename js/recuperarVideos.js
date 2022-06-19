@@ -1,23 +1,93 @@
-var idGenero = "";
-var nGeneros = 0;
-var primero = true;
-var myHeaders = new Headers();
-var data = sessionStorage.getItem('token');
-myHeaders.append("Authorization", "Bearer "+data);
+const express = require('express')
+const router =express.Router()
+const conexion = require('database/db')
 
-var requestOptions = {
-  method: 'GET',
-  headers: myHeaders,
-  redirect: 'follow'
-};
+const authController =require('Controllers/authController');
+const { createConnection } = require('mysql');
+
+var nGeneros = 0;
+var nombreGenero = ''; 
+var nVideos = 0;
+var video;
+var primero = true;
+
 
 document.body.onload = cargaPagina;
+//Aquí poner la función de cargar los vídeos
 //Primero al cargar tendríamos una función que llame al fetch, luego tendríamos otra función que realiza la muestra de archivos
 function cargaPagina(){
-  fetch("https://labinfsoft.herokuapp.com/api/videos?limite=10&desde=0", requestOptions)
-    .then(response => response.json())
-    .then(result => muestravideos(result))
-    .catch(error => console.log('error', error));
+
+  getNumeroCategorias(function(err, data){
+    if(err){
+      console.log("Error : ", err );
+    }else{
+      nGeneros = data;
+    }
+  })
+
+  getNumeroVideos(function(err,data){
+    if(err){
+      console.log("Error: ", err);
+    }else{
+      nVideos = data;
+    }
+  })
+
+  for (var i = 1; i <= nGeneros; i++){
+
+    getCategoria(i, function(err, data){
+      if(err){
+        console.log("Error: ", err)
+      }else{
+        nombreGenero = data;
+      }
+    })
+
+    var div = document.getElementById("cat");    
+    var clon = div.cloneNode("cat");
+    clon.setAttribute("id", i);
+    clon.setAttribute("class", "categoria");
+
+    var h3 = document.createElement("h3");
+    var text = document.createTextNode(nombreGenero);
+    h3.appendChild(text);
+    clon.appendChild(h3);
+
+    const pagina = document.querySelector("#pagina"); // <div id="pagina">App</div>
+    pagina.insertAdjacentElement("afterbegin", clon);
+  }
+
+  var categorias = document.getElementsByClassName("categoria");
+  for (var j=1; j <= nVideos; j++){
+    getVideo(i, function(err, data){
+      if(err){
+        console.log("Error: ", err)
+      }else{
+        video = data;
+      }
+    })
+    for(var g = 1; g <= nGeneros; g++){
+      if( video.idCat == g){
+        var tag = document.createElement("p");
+        var text = document.createTextNode(video.Titulo);
+        tag.appendChild(text);
+        categorias[k].appendChild(tag);
+
+       //<iframe width="420" height="315" src="">
+        const original= video.Enlace;
+        const youtube = getId(original);
+
+        console.log('Video ID:', videos.productos[j].url)
+
+        var iframe = document.createElement("iframe");
+        iframe.style.width ="420 px";
+        iframe.style.height ="315 px";
+        iframe.setAttribute("src", "http://www.youtube.com/embed/"  + youtube);
+        iframe.setAttribute("frameborder", "0");
+        categorias[k].appendChild(iframe);
+      }
+    }
+  }
 }
   //result.productos[0].categoria.id;
 
@@ -26,63 +96,6 @@ function cargaPagina(){
 //Necesitamos encontrar una manera de contar el número de categorías que hay en la petición
 //Para eso no sé si usar un bucle while o un bucle for para sacar los datos.
 
-function muestravideos(videos) {
- var v= videos.total;
- for (var i = 0; i < v; i++) { //n debería recorrer toda la petición json
-   if (videos.productos[i].categoria._id != idGenero) {
-     idGenero = videos.productos[i].categoria._id;
-       //en lugar de crear nuevos divs ponemos en el doc html
-       //ya uno de base con una id definida.
-       //a partir de ahí vamos creando el resto de divs asignandoles la clase e id correspondiente
-     
-     var div = document.getElementById("cat");    
-     var clon = div.cloneNode("cat");
-     clon.setAttribute("id", idGenero);
-     clon.setAttribute("class", "categoria");
-
-     var h3 = document.createElement("h3");
-     var text = document.createTextNode(videos.productos[i].categoria.nombre);
-     h3.appendChild(text);
-     clon.appendChild(h3);
-
-     const pagina = document.querySelector("#pagina"); // <div id="pagina">App</div>
-     pagina.insertAdjacentElement("afterbegin", clon);
-   } 
- }
-
- var categorias = document.getElementsByClassName("categoria");
- for (var j=0; j < v; j++){
-   for (var k=0; k < categorias.length; k++){
-     if(videos.productos[j].categoria._id == categorias[k].id){
-       
-       var tag = document.createElement("p");
-       var text = document.createTextNode(videos.productos[j].nombre);
-       tag.appendChild(text);
-       categorias[k].appendChild(tag);
-
-       //<iframe width="420" height="315" src="">
-
-      
-    const original= videos.productos[j].url;
-    const youtube = getId(videos.productos[j].url);
-    //const iframeMarkup = '<iframe width="560" height="315" src="//www.youtube.com/embed/' 
-      //  + videoId + '" frameborder="0" allowfullscreen></iframe>';
-    
-
-
-     
-    console.log('Video ID:', videos.productos[j].url)
-
-       var iframe = document.createElement("iframe");
-       iframe.style.width ="420 px";
-       iframe.style.height ="315 px";
-       iframe.setAttribute("src", "http://www.youtube.com/embed/"  + youtube);
-       iframe.setAttribute("frameborder", "0");
-       categorias[k].appendChild(iframe);
-     }
-   }
- }
-}
 
 function getId(url) {
   var regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -92,5 +105,52 @@ function getId(url) {
       return match[2];
   } else {
       return 'error';
+  }
+}
+
+function getNumeroCategorias (callback){
+  try{
+    conexion.query("SELECT COUNT(*) FROM categorias",function (err, results){
+      if (err){
+         throw err;
+      }else{
+        callback(results[0]);
+      }
+    }) 
+  }catch( error){
+    console.log(error);
+  }
+}
+
+function getNumeroVideos (callback){
+  try{
+    conexion.query("SELECT COUNT(*) FROM vídeos", function (err, results){
+      if (err) throw err;
+      callback(results[0]);
+    }) 
+  }catch( error){
+    console.log(error);
+  }
+}
+
+function getCategoria (numeroCat, callback){
+  try{
+    conexion.query('SELECT Nombre FROM categorías Where ID = ?', [numeroCat], function (error,results){
+      if(error){console.log(error)}
+      callback(results[0]);
+    })
+  }catch( error){
+      console.log(error);
+  }
+}
+
+function getVideo (numeroVideo, callback){
+  try{
+    conexion.query('SELECT * FROM vídeos Where ID = ?', [numeroVideo], async (error,results)=>{
+      if(error){console.log(error)}
+      callback(results[0]);
+    })
+  }catch( error){
+      console.log(error);
   }
 }
